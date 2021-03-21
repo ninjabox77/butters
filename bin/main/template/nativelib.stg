@@ -1,0 +1,35 @@
+
+Info() ::= <<
+This file contains all required templates for generating a valid ProcessJ
+native library when using the Butters tool. Note that these templates
+and their attributes are __awlays__ rendered before the code generation
+phase.
+>>
+
+//------------------------------------------------------------------------------------
+Compilation(pragmas, fields, methods) ::= <<
+<pragmas>
+
+<if(fields)><fields:{f | <f>}; separator="\n"><\n><endif>
+<if(methods)><methods:{m | <m>}; separator="\n"><\n><endif>
+>>
+
+//------------------------------------------------------------------------------------
+Pragmas(file, language, package) ::= <<
+#pragma LIBRARY;
+#pragma NATIVE;
+#pragma FILE "<file>";
+#pragma LANGUAGE "<language>";
+
+package <package>;
+>>
+
+//------------------------------------------------------------------------------------
+ParamDecls(types, names) ::= <<
+<types, names:{t, n | <t> <n>}; separator=", ">
+>>
+
+//------------------------------------------------------------------------------------
+MethodDecls(type, name, params, refname) ::= <<
+public native <if(type)><type> <endif><name>(<refname> __ref<if(params)>, <params><endif>);
+>>
