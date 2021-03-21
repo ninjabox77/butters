@@ -19,7 +19,7 @@ public class Nativelib {
     
     /** Name of primitive data types in ProcessJ that can be
      * represented by wrapper classes in Java */
-    static final String[] names = new String[] { "String", "Byte",
+    static final String[] PRIMITIVES = new String[] { "String", "Byte",
             "Short", "Integer", "Long", "Float", "Double", "Boolean" };
     /** Especial case for when a library holds this type */
     static final String CHARACTER = "Character";
@@ -40,7 +40,7 @@ public class Nativelib {
     
     private String convertClassname(String type) {
         if ( type.equals(CHARACTER) ) return "char";
-        for (String name : names)
+        for (String name : PRIMITIVES)
             if ( type.equals(name) )
                 type = type.toLowerCase();
         return type;
@@ -58,7 +58,14 @@ public class Nativelib {
         List<String> methods = new ArrayList<>();
         
         if ( !lib.fields().isEmpty() ) {
-            // TODO: Write fields
+            // Grab formal fields
+            ST stFieldDecl = stGroup.getInstanceOf("FieldDecl");
+            for (FieldDecl fd : lib.fields()) {
+                stFieldDecl.add("type", fd.type());
+                stFieldDecl.add("name", fd.name());
+                stFieldDecl.add("value", fd.value());
+                fields.add(stFieldDecl.render());
+            }
         }
         
         if ( !lib.methods().isEmpty() ) {

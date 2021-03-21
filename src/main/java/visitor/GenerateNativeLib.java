@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
@@ -13,6 +14,8 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.LiteralStringValueExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import schema.FieldDecl;
@@ -46,7 +49,9 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
         for (VariableDeclarator vd : fd.getVariables()) {
             if ( vd.getType().isPrimitiveType() || vd.getTypeAsString().equals(className) ) {
                 FieldDecl f = new FieldDecl(vd.getTypeAsString(), vd.getNameAsString());
-                // TODO: Missing initializer!!
+                Optional<Expression> expr = vd.getInitializer();
+                if ( expr.isPresent() )
+                    f.value(expr.get().toString());
                 fields.add(f);
             }
         }
@@ -67,7 +72,7 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
         super.visit(md, ld);
         MethodDecl method = new MethodDecl();
         method.name(md.getNameAsString());
-        if ( !md.getType().isPrimitiveType() && !md.getTypeAsString().equals(className) )
+        if ( !md.getType().isPrimitiveType() && !md.getType().isVoidType() && !md.getTypeAsString().equals(className) )
             return;
         method.returnType(md.getTypeAsString());
         for (Modifier mod : md.getModifiers()) {

@@ -33,3 +33,8 @@ ParamDecls(types, names) ::= <<
 MethodDecls(type, name, params, refname) ::= <<
 public native <if(type)><type> <endif><name>(<refname> __ref<if(params)>, <params><endif>);
 >>
+
+//------------------------------------------------------------------------------------
+FieldDecl(type, name, value) ::= <<
+public native const <type> <name><if(value)> = <value><endif>;
+>>

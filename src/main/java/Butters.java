@@ -15,7 +15,8 @@ public class Butters {
     
     public static void main(String[] args) {
         try {
-            CompilationUnit cu = StaticJavaParser.parse(new File("/Users/oswaldocisneros/Documents/String.java"));
+            ///Users/oswaldocisneros/Documents/String.java
+            CompilationUnit cu = StaticJavaParser.parse(new File("../butters/src/main/java/Foo.java"));
             LibDecl libDecl = new LibDecl("strings", "JVM", "std");
             VoidVisitor<LibDecl> generateNativeLib = new GenerateNativeLib();
             generateNativeLib.visit(cu, libDecl);
