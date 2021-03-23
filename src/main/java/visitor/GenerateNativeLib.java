@@ -2,7 +2,7 @@ package visitor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,7 +15,6 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.LiteralStringValueExpr;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import schema.FieldDecl;
@@ -28,18 +27,21 @@ import schema.ParamDecl;
  */
 public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
     
+    static final String JAVA_LANG = "java.lang";
+    
+    /** Access modifiers for methods */
     static final String SYNCHRONIZED = "synchronized";
     static final String[] ACCESS_MODIFIERS = new String[] { "public",
             "static", "final" };
-    static HashMap<String, Integer> hm = new HashMap<>();
+    static Hashtable<String, Integer> ht = new Hashtable<>();
     
-    // Name of the native Java library
+    /** Name of the native Java library */
     String className = null;
     
     static {
         int index = 0;
         for (String str : ACCESS_MODIFIERS)
-            hm.put(str, index++);
+            ht.put(str, index++);
     }
     
     public void visit(FieldDeclaration fd, LibDecl ld) {
@@ -61,8 +63,8 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
         for (FieldDecl f : fields) {
             Boolean[] modifiers = new Boolean[] { false, false, false };
             for (String str : f.modifiers())
-                if ( hm.get(str)!=null )
-                    modifiers[hm.get(str)] = true;
+                if ( ht.get(str)!=null )
+                    modifiers[ht.get(str)] = true;
             if ( !Arrays.asList(modifiers).contains(false) )
                 ld.addField(f);
         }
@@ -76,7 +78,7 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
             return;
         method.returnType(md.getTypeAsString());
         for (Modifier mod : md.getModifiers()) {
-            if (mod.toString().trim().equals(SYNCHRONIZED)) return;
+            if ( mod.toString().trim().equals(SYNCHRONIZED) ) return;
             method.addModifier(mod.toString().trim());
         }
         // Only add primitives to the list
@@ -113,9 +115,8 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
         className = cd.getNameAsString();
         ld.className(className);
         // Ignore inner classes and interfaces
-        for (Node n : cd.getChildNodes()) {
+        for (Node n : cd.getChildNodes())
             if ( !(n instanceof ClassOrInterfaceDeclaration) )
                 n.accept(this, ld);
-        }
     }
 }

@@ -15,9 +15,9 @@ Compilation(pragmas, fields, methods) ::= <<
 >>
 
 //------------------------------------------------------------------------------------
-Pragmas(file, language, package) ::= <<
+Pragmas(file, name, language, package) ::= <<
 #pragma LIBRARY;
-#pragma NATIVE;
+#pragma NATIVELIB "<name>";
 #pragma FILE "<file>";
 #pragma LANGUAGE "<language>";
 

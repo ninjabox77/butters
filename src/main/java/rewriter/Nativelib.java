@@ -1,6 +1,7 @@
 package rewriter;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.stringtemplate.v4.ST;
@@ -17,20 +18,34 @@ import schema.ParamDecl;
  */
 public class Nativelib {
     
-    /** Name of primitive data types in ProcessJ that can be
-     * represented by wrapper classes in Java */
-    static final String[] PRIMITIVES = new String[] { "String", "Byte",
-            "Short", "Integer", "Long", "Float", "Double", "Boolean" };
-    /** Especial case for when a library holds this type */
-    static final String CHARACTER = "Character";
+    // Name of primitive data types in ProcessJ that can be
+    // represented by wrapper classes in Java
+    static final String[] WRAPPERS = new String[] { "String", 
+            "Character", "Byte", "Short", "Integer", "Long", 
+            "Float", "Double", "Boolean" };
     
-    /** String template file locator */
+    // Name of primitives data types in ProcessJ
+    static final String[] PRIMITIVES = new String[] { "string", 
+            "char", "byte", "short", "int", "long", 
+            "float", "double", "boolean" };
+    
+    //.Conversion table: wrapper -> primitive
+    static final Hashtable<String, String> ht = new Hashtable<>();
+    
+    // String template file locator
     final String STG_NATIVELIB = "../butters/src/main/java/template/nativelib.stg";
     
-    /** Collection of templates */
+    // Collection of templates
     STGroup stGroup;
     
+    // This instance holds information with respect to the
+    // native ProcessJ library
     LibDecl lib;
+    
+    static {
+        for (int i = 0; i<WRAPPERS.length; ++i)
+            ht.put(WRAPPERS[i], PRIMITIVES[i]);
+    }
     
     public Nativelib(LibDecl lib) {
         this.lib = lib;
@@ -39,10 +54,8 @@ public class Nativelib {
     }
     
     private String convertClassname(String type) {
-        if ( type.equals(CHARACTER) ) return "char";
-        for (String name : PRIMITIVES)
-            if ( type.equals(name) )
-                type = type.toLowerCase();
+        if ( ht.containsKey(type) )
+            return ht.get(type);
         return type;
     }
     
@@ -69,8 +82,8 @@ public class Nativelib {
         }
         
         if ( !lib.methods().isEmpty() ) {
+            // Grab formal parameters
             for (MethodDecl md : lib.methods()) {
-                // Grab formal parameters
                 ST stParams = stGroup.getInstanceOf("ParamDecls");
                 List<String> types = new ArrayList<>();
                 List<String> names = new ArrayList<>();
@@ -84,7 +97,7 @@ public class Nativelib {
                 ST stMethodDecls = stGroup.getInstanceOf("MethodDecls");
                 String type = md.returnType()==null? md.name() : md.returnType();
                 stMethodDecls.add("type", convertClassname(type));
-                stMethodDecls.add("name", md.name());
+                stMethodDecls.add("name", convertClassname(md.name()));
                 stMethodDecls.add("refname", lib.className());
                 if ( !md.params().isEmpty() )
                     stMethodDecls.add("params", stParams.render());
