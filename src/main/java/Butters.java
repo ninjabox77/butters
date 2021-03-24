@@ -1,6 +1,17 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.stream.Stream;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -39,14 +50,23 @@ public class Butters {
     
     static final Option[] OPTIONS = new Option[] {
             new Option("nativelib", "-nativelib", OptionType.STRING, "library that maps directly to a different language's library"),
-            new Option("native_", "-native", "library written in the language set by the '-lang' command"),
+            new Option("native_", "-native", "library written in the language set by the \"-lang\" command"),
             new Option("file", "-file", OptionType.STRING, "name of the pj library"),
             new Option("lang", "-lang", OptionType.STRING, "name of the native language"),
             new Option("show", "show", "display usage and exits")
     };
     
-    // Parse arguments as follows:
-    // butters (-nativelib <name> | -native) -file <name> -lang <name>
+    // Parse a Java import 'extension' as follows:
+    //   java.lang.System.out => [java, lang, System, out]
+    // Then, it creates the correct path for locating the native Java
+    // library in the home directory
+    public void parseJavaext(String name) {
+        String[] result = name.split("\\.");
+        // TODO:
+    }
+    
+    // Parse arguments using the following commands:
+    //   Butters [-nativelib <name> | -native] -file <name> -lang <name>
     public void parseArgs(String[] args) {
         int pos = 0;
         while ( pos<args.length ) {
@@ -56,7 +76,7 @@ public class Butters {
             } else {
                 boolean foundOption = false;
                 for (Option o : OPTIONS) {
-                    if (arg.equals(o.optionName)) {
+                    if ( arg.equals(o.optionName) ) {
                         foundOption = true;
                         String value = null;
                         if ( o.optionType!=OptionType.BOOLEAN )
@@ -69,13 +89,13 @@ public class Butters {
                             else
                                 f.set(this, true);
                         } catch (Exception e) {
-                            System.err.println("Failde to access field '" + o.fieldName + "'");
+                            System.err.println("Failde to access field \"" + o.fieldName + "\"");
                             System.exit(1);
                         }
                     }
                 }
                 if ( !foundOption ) {
-                    System.err.println("Invalid option '" + arg + "' found!");
+                    System.err.println("Invalid option \"" + arg + "\" found!");
                     System.exit(1);
                 }
             }
@@ -95,6 +115,22 @@ public class Butters {
     public String native_;
     public boolean show;
     
+    interface IOConsumer<T> {
+        void accept(T t) throws IOException;
+    }
+    public static void processRessource(URI uri, IOConsumer<Path> action) throws IOException {
+        try {
+            Path p = Paths.get(uri);
+            action.accept(p);
+        }
+        catch(FileSystemNotFoundException ex) {
+            try(FileSystem fs = FileSystems.newFileSystem(
+                    uri, Collections.<String,Object>emptyMap())) {
+                Path p = fs.provider().getPath(uri);
+                action.accept(p);
+            }
+        }
+    }
 
     // There are two types of libraries:
     // - Libraries written in ProcessJ
@@ -124,8 +160,25 @@ public class Butters {
     //     LIBRARY
     //     FILE
     public static void main(String[] args) {
-        Butters butt = new Butters();
-        butt.parseArgs(new String[] { "show" });
+//        Butters butt = new Butters();
+//        butt.parseArgs(new String[] { "show" });
+        // <--
+//        try {
+//            processRessource(Object.class.getResource("Object.class").toURI(), path -> {
+//                Path p = path.getParent();
+//                if(!Files.exists(p))
+//                    p = p.resolve("/modules").resolve(p.getRoot().relativize(p));
+//                System.out.println(">> " + p.getFileSystem());
+//                try(Stream<Path> stream = Files.list(p)) {
+//                    stream.forEach(System.out::println);
+//                }
+//            });
+//        } catch (IOException | URISyntaxException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+        // -->
+        
         try {
             //../butters/src/main/java/Foo.java
             CompilationUnit cu = StaticJavaParser.parse(new File("/Users/oswaldocisneros/Documents/String.java"));
@@ -133,7 +186,10 @@ public class Butters {
             VoidVisitor<LibDecl> generateNativeLib = new GenerateNativeLib();
             generateNativeLib.visit(cu, libDecl);
 //            System.out.println(libDecl);
-            new rewriter.Nativelib(libDecl).writer();
+            rewriter.Nativelib nl = new rewriter.Nativelib(libDecl);
+            nl.writePJ();
+            System.out.println("==============================================================================");
+            nl.writeJava();
         } catch (FileNotFoundException e) {
             System.err.println(e);
         }

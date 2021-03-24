@@ -29,7 +29,7 @@ public class Nativelib {
             "char", "byte", "short", "int", "long", 
             "float", "double", "boolean" };
     
-    //.Conversion table: wrapper -> primitive
+    // Conversion table from Java to ProcessJ types: wrapper -> primitive
     static final Hashtable<String, String> ht = new Hashtable<>();
     
     // String template file locator
@@ -49,7 +49,6 @@ public class Nativelib {
     
     public Nativelib(LibDecl lib) {
         this.lib = lib;
-        this.lib.className(convertClassname(lib.className()));
         stGroup = new STGroupFile(STG_NATIVELIB);
     }
     
@@ -59,8 +58,8 @@ public class Nativelib {
         return type;
     }
     
-    public void writer() {
-        ST stCompilation = stGroup.getInstanceOf("Compilation");
+    public void writePJ() {
+        ST stNativelib = stGroup.getInstanceOf("Nativelib");
         ST stPragmas = stGroup.getInstanceOf("Pragmas");
         
         stPragmas.add("file", lib.file());
@@ -98,16 +97,70 @@ public class Nativelib {
                 String type = md.returnType()==null? md.name() : md.returnType();
                 stMethodDecls.add("type", convertClassname(type));
                 stMethodDecls.add("name", convertClassname(md.name()));
-                stMethodDecls.add("refname", lib.className());
+                stMethodDecls.add("ref", convertClassname(lib.className()));
                 if ( !md.params().isEmpty() )
                     stMethodDecls.add("params", stParams.render());
                 methods.add(stMethodDecls.render());
             }
         }
         
-        stCompilation.add("pragmas", stPragmas.render());
-        stCompilation.add("fields", fields);
-        stCompilation.add("methods", methods);
-        System.out.println(stCompilation.render());
+        stNativelib.add("pragmas", stPragmas.render());
+        stNativelib.add("fields", fields);
+        stNativelib.add("methods", methods);
+        System.out.println(stNativelib.render());
+    }
+    
+    public void writeJava() {
+        ST stClasslib = stGroup.getInstanceOf("Classlib");
+        
+        List<String> fields = new ArrayList<>();
+        List<String> methods = new ArrayList<>();
+        
+        if ( !lib.fields().isEmpty() ) {
+            // Grab formal fields
+            ST stFieldDef = stGroup.getInstanceOf("FieldDef");
+            for (FieldDecl fd : lib.fields()) {
+                stFieldDef.add("type", fd.type());
+                stFieldDef.add("name", fd.name());
+                stFieldDef.add("value", fd.value());
+                fields.add(stFieldDef.render());
+            }
+        }
+        
+        if ( !lib.methods().isEmpty() ) {
+            // Grab formal parameters
+            for (MethodDecl md : lib.methods()) {
+                ST stParams = stGroup.getInstanceOf("ParamDecls");
+                ST stParamDef = stGroup.getInstanceOf("ParamDef");
+                List<String> types = new ArrayList<>();
+                List<String> names = new ArrayList<>();
+                for (ParamDecl param : md.params()) {
+                    types.add(convertClassname(param.type()));
+                    names.add(param.name());
+                }
+                stParams.add("types", types);
+                stParams.add("names", names);
+                stParamDef.add("names", names);
+                // Grab method signature
+                ST stMethodDef = stGroup.getInstanceOf("MethodDef");
+                String type = md.returnType()==null? md.name() : md.returnType();
+                stMethodDef.add("type", type);
+                stMethodDef.add("name", md.name());
+                stMethodDef.add("ref", lib.className());
+                if ( !type.equals("void") )
+                    stMethodDef.add("return", true);
+                if ( !md.params().isEmpty() ) {
+                    stMethodDef.add("actuals", stParams.render());
+                    stMethodDef.add("formals", stParamDef.render());
+                }
+                methods.add(stMethodDef.render());
+            }
+        }
+        
+        stClasslib.add("package", lib.pkg());
+        stClasslib.add("name", lib.file());
+        stClasslib.add("fields", fields);
+        stClasslib.add("methods", methods);
+        System.out.println(stClasslib.render());
     }
 }

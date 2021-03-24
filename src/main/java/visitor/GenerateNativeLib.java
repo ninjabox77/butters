@@ -27,15 +27,13 @@ import schema.ParamDecl;
  */
 public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
     
-    static final String JAVA_LANG = "java.lang";
-    
-    /** Access modifiers for methods */
+    // Access modifiers for methods
     static final String SYNCHRONIZED = "synchronized";
     static final String[] ACCESS_MODIFIERS = new String[] { "public",
             "static", "final" };
     static Hashtable<String, Integer> ht = new Hashtable<>();
     
-    /** Name of the native Java library */
+    // Name of the native Java library
     String className = null;
     
     static {
@@ -62,9 +60,10 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
                 f.addModifier(mod.toString().trim());
         for (FieldDecl f : fields) {
             Boolean[] modifiers = new Boolean[] { false, false, false };
-            for (String str : f.modifiers())
+            for (String str : f.modifiers()) {
                 if ( ht.get(str)!=null )
                     modifiers[ht.get(str)] = true;
+            }
             if ( !Arrays.asList(modifiers).contains(false) )
                 ld.addField(f);
         }
@@ -74,7 +73,8 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
         super.visit(md, ld);
         MethodDecl method = new MethodDecl();
         method.name(md.getNameAsString());
-        if ( !md.getType().isPrimitiveType() && !md.getType().isVoidType() && !md.getTypeAsString().equals(className) )
+        if ( !md.getType().isPrimitiveType() && !md.getType().isVoidType()
+                && !md.getTypeAsString().equals(className) )
             return;
         method.returnType(md.getTypeAsString());
         for (Modifier mod : md.getModifiers()) {
@@ -88,9 +88,10 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
             method.addParam(new ParamDecl(param.getTypeAsString(),
                     param.getNameAsString()));
         }
-        for (String mod : method.modifiers())
+        for (String mod : method.modifiers()) {
             if ( mod.equals(ACCESS_MODIFIERS[0]) )
                 ld.addMethod(method);
+        }
     }
     
     public void visit(ConstructorDeclaration cd, LibDecl ld) {
@@ -106,17 +107,19 @@ public class GenerateNativeLib extends VoidVisitorAdapter<LibDecl> {
             method.addParam(new ParamDecl(param.getTypeAsString(),
                     param.getNameAsString()));
         }
-        for (String mod : method.modifiers())
+        for (String mod : method.modifiers()) {
             if ( mod.equals(ACCESS_MODIFIERS[0]) )
                 ld.addMethod(method);
+        }
     }
     
     public void visit(ClassOrInterfaceDeclaration cd, LibDecl ld) {
         className = cd.getNameAsString();
         ld.className(className);
         // Ignore inner classes and interfaces
-        for (Node n : cd.getChildNodes())
+        for (Node n : cd.getChildNodes()) {
             if ( !(n instanceof ClassOrInterfaceDeclaration) )
                 n.accept(this, ld);
+        }
     }
 }

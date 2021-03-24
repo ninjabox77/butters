@@ -6,15 +6,15 @@ and their attributes are __awlays__ rendered before the code generation
 phase.
 >>
 
-//------------------------------------------------------------------------------------
-Compilation(pragmas, fields, methods) ::= <<
+//------------------------------------------------------------------------------
+Nativelib(pragmas, fields, methods) ::= <<
 <pragmas>
 
 <if(fields)><fields:{f | <f>}; separator="\n"><\n><endif>
 <if(methods)><methods:{m | <m>}; separator="\n"><\n><endif>
 >>
 
-//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 Pragmas(file, name, language, package) ::= <<
 #pragma LIBRARY;
 #pragma NATIVELIB "<name>";
@@ -24,17 +24,45 @@ Pragmas(file, name, language, package) ::= <<
 package <package>;
 >>
 
-//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 ParamDecls(types, names) ::= <<
 <types, names:{t, n | <t> <n>}; separator=", ">
 >>
 
-//------------------------------------------------------------------------------------
-MethodDecls(type, name, params, refname) ::= <<
-public native <if(type)><type> <endif><name>(<refname> __ref<if(params)>, <params><endif>);
+//------------------------------------------------------------------------------
+MethodDecls(type, name, params, ref) ::= <<
+public native <type> <name>(<ref> __ref<if(params)>, <params><endif>);
 >>
 
-//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 FieldDecl(type, name, value) ::= <<
 public native const <type> <name><if(value)> = <value><endif>;
+>>
+
+//==============================================================================
+//==============================================================================
+Classlib(package, name, fields, methods) ::= <<
+package <package>;
+
+public class <name> {
+    <if(fields)><fields:{f | <f>}; separator="\n"><\n><endif>
+    <if(methods)><methods:{m | <m>}; separator="\n\n"><\n><endif>
+}
+>>
+
+//------------------------------------------------------------------------------
+ParamDef(names) ::= <<
+<names:{n | <n>}; separator=", ">
+>>
+
+//------------------------------------------------------------------------------
+MethodDef(type, name, actuals, formals, ref, return) ::= <<
+public static <type> <name>(<ref> __ref<if(actuals)>, <actuals><endif>) {
+    <if(return)>return <endif>__ref.<name>(<formals>);
+}
+>>
+
+//------------------------------------------------------------------------------
+FieldDef(type, name, value) ::= <<
+public static <type> <name><if(value)> = <value><endif>;
 >>
